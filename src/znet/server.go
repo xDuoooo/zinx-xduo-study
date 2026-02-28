@@ -18,6 +18,11 @@ type Server struct {
 	Port int
 }
 
+func (s *Server) GetConnID() uint32 {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (s *Server) Start() {
 	go func() {
 		fmt.Printf("[Start] Server Listener at IP :%s, Port %d, is starting", s.IP, s.Port)
