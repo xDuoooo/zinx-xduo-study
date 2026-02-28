@@ -1,7 +1,6 @@
 package znet
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"zinx-xduo-study/src/ziface"
@@ -18,31 +17,21 @@ type Connection struct {
 	//当前连接状态
 	isClosed bool
 
-	//当前连接所绑定的处理业务方法API
-	handlerAPI ziface.HandleFunc
-
 	//告知当前连接已经退出的/停止 channel
 	EXitChan chan bool
-}
 
-// CallBackToClient 定义当前客户端连接所绑定的HandlerAPI 目前写死的,以后优化，应该由用户自定义handle方法
-func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
-	fmt.Println("[Conn Handle] CallBackToCLient...")
-	if _, err := conn.Write(data[:cnt]); err != nil {
-		fmt.Println("write back buf err", err)
-		return errors.New("CallBackToClient error")
-	}
-	return nil
+	//该连接处理的方法Router
+	Router ziface.IRouter
 }
 
 // NewConnection 初始化连接模块的方法
-func NewConnection(conn *net.TCPConn, connID uint32, callBackAPI ziface.HandleFunc) *Connection {
+func NewConnection(conn *net.TCPConn, connID uint32, router ziface.IRouter) *Connection {
 	c := &Connection{
-		Conn:       conn,
-		ConnID:     connID,
-		handlerAPI: callBackAPI,
-		isClosed:   false,
-		EXitChan:   make(chan bool, 1),
+		Conn:     conn,
+		ConnID:   connID,
+		isClosed: false,
+		EXitChan: make(chan bool, 1),
+		Router:   router,
 	}
 	return c
 }
@@ -55,17 +44,22 @@ func (c *Connection) StratReader() {
 	for {
 		//读取客户端的数据到buf中，最大512字节
 		buf := make([]byte, 512)
-		cnt, err := c.Conn.Read(buf)
+		_, err := c.Conn.Read(buf)
 		if err != nil {
 			fmt.Println("receive buf err", err)
 			continue
 		}
-		//调用当前连接所绑定的HandleAPI
-		err = c.handlerAPI(c.Conn, buf, cnt)
-		if err != nil {
-			fmt.Println("ConnID", c.ConnID, "handle is error", err)
-			break
+		//得到当前连接数据的Request数据
+		req := Request{
+			conn: c,
+			data: buf,
 		}
+		go func(request ziface.IRequest) {
+			//从路由中，找到注册绑定的Conn对应的router调用
+			c.Router.PreHande(request)
+			c.Router.Handle(request)
+			c.Router.PostHandle(request)
+		}(&req)
 
 	}
 }

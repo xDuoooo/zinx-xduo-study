@@ -16,11 +16,13 @@ type Server struct {
 	IP string
 	//服务器监听的端口
 	Port int
+	//当前Server绑定的Router
+	Router ziface.IRouter
 }
 
-func (s *Server) GetConnID() uint32 {
-	//TODO implement me
-	panic("implement me")
+func (s *Server) AddRouter(router ziface.IRouter) {
+	s.Router = router
+	fmt.Println("Add Router Success!")
 }
 
 func (s *Server) Start() {
@@ -48,7 +50,7 @@ func (s *Server) Start() {
 				continue
 			}
 			//将处理新连接的业务方法 和 conn 进行绑定 得到我们的连接模块
-			dealConnection := NewConnection(conn, cid, CallBackToClient)
+			dealConnection := NewConnection(conn, cid, s.Router)
 			cid++
 			//启动当前的连接业务处理
 			go dealConnection.Start()
@@ -77,6 +79,7 @@ func NewServer(name string) ziface.IServer {
 		IPVersion: "tcp4",
 		IP:        "0.0.0.0",
 		Port:      8999,
+		Router:    nil,
 	}
 	return s
 }
