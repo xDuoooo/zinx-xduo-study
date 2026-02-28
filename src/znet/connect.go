@@ -56,7 +56,7 @@ func (c *Connection) StratReader() {
 		}
 		go func(request ziface.IRequest) {
 			//从路由中，找到注册绑定的Conn对应的router调用
-			c.Router.PreHande(request)
+			c.Router.PreHandle(request)
 			c.Router.Handle(request)
 			c.Router.PostHandle(request)
 		}(&req)
