@@ -37,6 +37,8 @@ func (s *Server) Start() {
 			fmt.Println("listen", s.IPVersion, "err", err)
 		}
 		fmt.Println("start Zinx server success", s.Name, "success, Listening...")
+		var cid uint32
+		cid = 0
 		//3. 阻塞等待客户端进行连接，处理客户端连接业务()
 		for {
 			//如果有客户端连接进来，阻塞会返回
@@ -45,24 +47,11 @@ func (s *Server) Start() {
 				fmt.Println("Accept err", err)
 				continue
 			}
-			//已经与客户端建立连接，做一些业务,做一个最基本的最大512字节长度的回显业务
-			go func() {
-				for {
-					buf := make([]byte, 512)
-					cnt, err := conn.Read(buf)
-					if err != nil {
-						fmt.Println("receive buf err", err)
-						continue
-					}
-					//接收到服务器写的消息
-					fmt.Printf("receive client buf %s,cnt = %d\n", buf[:cnt], cnt)
-					//回显功能
-					if _, err := conn.Write(buf[:cnt]); err != nil {
-						fmt.Println("write back buf err", err)
-						continue
-					}
-				}
-			}()
+			//将处理新连接的业务方法 和 conn 进行绑定 得到我们的连接模块
+			dealConnection := NewConnection(conn, cid, CallBackToClient)
+			cid++
+			//启动当前的连接业务处理
+			go dealConnection.Start()
 		}
 	}()
 }

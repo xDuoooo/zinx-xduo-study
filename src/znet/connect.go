@@ -1,6 +1,7 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"zinx-xduo-study/src/ziface"
@@ -22,6 +23,16 @@ type Connection struct {
 
 	//告知当前连接已经退出的/停止 channel
 	EXitChan chan bool
+}
+
+// CallBackToClient 定义当前客户端连接所绑定的HandlerAPI 目前写死的,以后优化，应该由用户自定义handle方法
+func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
+	fmt.Println("[Conn Handle] CallBackToCLient...")
+	if _, err := conn.Write(data[:cnt]); err != nil {
+		fmt.Println("write back buf err", err)
+		return errors.New("CallBackToClient error")
+	}
+	return nil
 }
 
 // NewConnection 初始化连接模块的方法
