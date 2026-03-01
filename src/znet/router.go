@@ -9,8 +9,8 @@ type BaseRouter struct{}
 //是因为有的Router不希望有PreHandler、PostHander这两个业务
 //所以Router全部继承BaseRouter的好处就是，不需要都实现，可以选择性实现
 
-// PreHande 在处理业务之前的hook
-func (br *BaseRouter) PreHande(request ziface.IRequest) {
+// PreHandle 在处理业务之前的hook
+func (br *BaseRouter) PreHandle(request ziface.IRequest) {
 
 }
 
