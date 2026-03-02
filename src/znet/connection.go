@@ -22,6 +22,9 @@ type Connection struct {
 	//告知当前连接已经退出的/停止 channel
 	EXitChan chan bool
 
+	//无缓冲管道，用于读写Goroutine之间的消息通信
+	msgChan chan []byte
+
 	//该连接处理的方法Router ， key：msgID value：router
 	MsgHandler ziface.IMsgHandler
 }
@@ -33,6 +36,7 @@ func NewConnection(conn *net.TCPConn, connID uint32, handler ziface.IMsgHandler)
 		ConnID:     connID,
 		isClosed:   false,
 		EXitChan:   make(chan bool, 1),
+		msgChan:    make(chan []byte),
 		MsgHandler: handler,
 	}
 	return c
@@ -40,7 +44,7 @@ func NewConnection(conn *net.TCPConn, connID uint32, handler ziface.IMsgHandler)
 
 // StratReader 连接的读数据业务方法
 func (c *Connection) StratReader() {
-	fmt.Println("Reader Goroutine is running...")
+	fmt.Println("[Reader] Goroutine is running...")
 	defer fmt.Println("connID = ", c.ConnID, "Reader is exit,remove addr is ", c.RemoteAddr().String())
 	defer c.Stop()
 	for {
@@ -95,6 +99,26 @@ func (c *Connection) StratReader() {
 	}
 }
 
+// StartWriter 写消息Goroutine,专门发送给客户端消息的模块
+func (c *Connection) StartWriter() {
+	fmt.Println("[Writer Goroutine is running]")
+	defer fmt.Println(c, c.RemoteAddr().String(), "[connection Writer exit!]")
+
+	for {
+		select {
+		case data := <-c.msgChan:
+			//有数据要写给客户端
+			if _, err := c.Conn.Write(data); err != nil {
+				fmt.Println("Send data error, ", err)
+			}
+		case <-c.EXitChan:
+			fmt.Println("Writer Stop()... ConnID = ", c.ConnID)
+			//代表Reader已经退出，该协程也要退出
+			return
+		}
+	}
+}
+
 // SendMessage 提供一个SendMsg方法 将我们要发送给客户端的数据，先进行封包，再发送
 func (c *Connection) SendMessage(msgId uint32, data []byte) error {
 	if c.isClosed {
@@ -109,11 +133,8 @@ func (c *Connection) SendMessage(msgId uint32, data []byte) error {
 		fmt.Println("pack error msg id = ", msgId)
 		return errors.New("pack error msg")
 	}
-	//将数据发送给客户端
-	if _, err := c.Conn.Write(bytes); err != nil {
-		fmt.Println("write msg id :", msg, "error : ", err)
-		return errors.New("send to conn error")
-	}
+	//将数据发送给Writer管道
+	c.msgChan <- bytes
 	return nil
 }
 
@@ -122,7 +143,7 @@ func (c *Connection) Start() {
 	fmt.Println("Conn Start()... ConnID = ", c.ConnID)
 	//启动从当前连接的读数据业务
 	go c.StratReader()
-	//TODO 启动从当前连接的写数据的业务
+	go c.StartWriter()
 }
 
 // Stop 停止连接 结束当前连接的工作
@@ -136,8 +157,12 @@ func (c *Connection) Stop() {
 	c.isClosed = true
 	//关闭socket连接
 	c.Conn.Close()
+	//告知Writer关闭
+	c.EXitChan <- true
+
 	//回收资源
 	close(c.EXitChan)
+	close(c.msgChan)
 }
 
 // GetTCPConnection 获取当前连接绑定的socket connection
