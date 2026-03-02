@@ -45,7 +45,7 @@ func NewConnection(conn *net.TCPConn, connID uint32, handler ziface.IMsgHandler)
 // StratReader 连接的读数据业务方法
 func (c *Connection) StratReader() {
 	fmt.Println("[Reader] Goroutine is running...")
-	defer fmt.Println("connID = ", c.ConnID, "Reader is exit,remove addr is ", c.RemoteAddr().String())
+	defer fmt.Println("connID = ", c.ConnID, "[Reader is exit],remove addr is ", c.RemoteAddr().String())
 	defer c.Stop()
 	for {
 		//读取客户端的数据到buf中，最大512字节
