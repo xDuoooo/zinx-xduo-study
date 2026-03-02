@@ -9,4 +9,6 @@ type IRequest interface {
 	GetConnection() IConnection
 	// GetData 得到请求的消息数据
 	GetData() []byte
+	// GetMsgID 得到当前请求消息的ID
+	GetMsgID() uint32
 }

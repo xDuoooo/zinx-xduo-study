@@ -87,5 +87,6 @@ func NewServer(name string) ziface.IServer {
 		Port:      utils.GlobalObject.TCPPort,
 		Router:    nil,
 	}
+	utils.GlobalObject.Reload()
 	return s
 }
