@@ -45,5 +45,5 @@ func init() {
 		MaxPackageSize: 4096,
 		Host:           "0.0.0.0",
 	}
-	GlobalObject.Reload()
+	//GlobalObject.Reload()
 }
