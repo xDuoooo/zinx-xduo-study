@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"zinx-xduo-study/src/utils"
 	"zinx-xduo-study/src/ziface"
 )
 
@@ -91,10 +92,17 @@ func (c *Connection) StratReader() {
 			conn: c,
 			msg:  pack,
 		}
-		go func(request ziface.IRequest) {
-			//从路由中，找到注册绑定的Conn对应的router调用
-			c.MsgHandler.DoMsgHandler(request)
-		}(&req)
+		//go func(request ziface.IRequest) {
+		//从路由中，找到注册绑定的Conn对应的router调用
+		//c.MsgHandler.DoMsgHandler(request)
+		//将消息发送给对应的channel
+		//}(&req)
+		if utils.GlobalObject.WorkerPoolSize > 0 {
+			//已经开启了工作池机制，将消息 发送给Worker工作池处理即可
+			c.MsgHandler.SendMsgToTaskQueue(&req)
+		} else {
+			go c.MsgHandler.DoMsgHandler(&req)
+		}
 
 	}
 }
