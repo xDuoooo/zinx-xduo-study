@@ -11,4 +11,11 @@ type IServer interface {
 	Server()
 	// AddRouter 给当前的服务注册一个路由方法，供客户端的连接使用
 	AddRouter(msgID uint32, router IRouter)
+	// GetConnManager 得到连接管理器
+	GetConnManager() IConnManager
+
+	SetBeforeConnCreateFunc(func(connection IConnection))
+	SetAfterConnDeployFunc(func(connection IConnection))
+	CallBeforeConnCreateFunc(connection IConnection)
+	CallAfterConnDeployFunc(connection IConnection)
 }
