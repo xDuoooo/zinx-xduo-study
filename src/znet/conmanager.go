@@ -68,12 +68,11 @@ func (connMgr *ConnManager) ClearConn() {
 	for _, conn := range connMgr.connections {
 		conns = append(conns, conn)
 	}
-	count := len(connMgr.connections)                         // 在清空前记录数量，否则清空后打印永远为 0
 	connMgr.connections = make(map[uint32]ziface.IConnection) // 清空 map
 	connMgr.connLock.Unlock()                                 // 先解锁，再 Stop
 
 	for _, conn := range conns {
 		conn.Stop() // Remove() 在此被调用时锁已释放，不会死锁
 	}
-	fmt.Println("Clear All connections success! cleared conn num = ", count)
+	fmt.Println("Clear All connections success! conn num = ", connMgr.Len())
 }
